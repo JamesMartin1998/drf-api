@@ -3,6 +3,7 @@ from .models import Profile
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    # changes the owner field to show the username instead of pk
     owner = serializers.ReadOnlyField(source='owner.username')
 
     class Meta:
