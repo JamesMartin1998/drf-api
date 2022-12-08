@@ -23,3 +23,5 @@ class LikeDetail(generics.RetrieveDestroyAPIView):
     # need to be the owner of a comment to delete it
     # anyone can see the detail
     permission_classes = [IsOwnerOrReadOnly]
+    serializer_class = LikeSerializer
+    queryset = Like.objects.all()
