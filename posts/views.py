@@ -1,3 +1,5 @@
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Count
 # from django.http import Http404
 # from rest_framework import status, permissions
 # from rest_framework.response import Response
@@ -5,7 +7,7 @@
 from .models import Post
 from .serializers import PostSerializer
 from drf_api.permissions import IsOwnerOrReadOnly
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, filters
 
 
 class PostList(generics.ListCreateAPIView):
@@ -15,7 +17,32 @@ class PostList(generics.ListCreateAPIView):
     """
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Post.objects.all()
+    queryset = Post.objects.annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comment', distinct=True)
+    ).order_by('-created_at')
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend
+    ]
+    filterset_fields = [
+        # posts by users that the user is following
+        'owner__followed__owner__profile',
+        # posts liked by the user
+        'likes__owner__profile',
+        # posts by user
+        'owner__profile'
+    ]
+    search_fields = [
+        'owner__username',
+        'title'
+    ]
+    ordering_fields = [
+        'like_count',
+        'comment_count',
+        'likes__created_at'
+    ]
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -93,4 +120,7 @@ class PostDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     serializer_class = PostSerializer
     permission_classes = [IsOwnerOrReadOnly]
-    queryset = Post.objects.all()
+    queryset = Post.objects.annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comment', distinct=True)
+    ).order_by('-created_at')
